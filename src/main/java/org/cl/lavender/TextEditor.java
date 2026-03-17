@@ -41,6 +41,12 @@ public class TextEditor extends JFrame {
         newTab();
     }
 
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        if (visible) SwingUtilities.invokeLater(() -> currentTab().textArea.requestFocusInWindow());
+    }
+
     // ── Tab management ───────────────────────────────────────────────────────
 
     private EditorTab newTab() {
@@ -258,6 +264,7 @@ public class TextEditor extends JFrame {
 
             label = new JLabel(tab.getTitle());
             label.setFont(UIManager.getFont("TabbedPane.font"));
+            label.setForeground(UIManager.getColor("TabbedPane.foreground"));
 
             JButton close = new JButton("×");
             close.setFont(close.getFont().deriveFont(11f));
