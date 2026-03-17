@@ -123,6 +123,13 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("Edit");
         menu.setMnemonic('E');
 
+        menu.add(item("Undo", KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK, e -> {
+            if (currentTab().undoManager.canUndo()) currentTab().undoManager.undo();
+        }));
+        menu.add(item("Redo", KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK, e -> {
+            if (currentTab().undoManager.canRedo()) currentTab().undoManager.redo();
+        }));
+        menu.addSeparator();
         menu.add(item("Cut",        KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.cut()));
         menu.add(item("Copy",       KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.copy()));
         menu.add(item("Paste",      KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.paste()));

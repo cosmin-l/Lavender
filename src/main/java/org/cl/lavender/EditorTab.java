@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.*;
@@ -13,6 +14,7 @@ public class EditorTab extends JPanel {
     final JTextArea textArea;
     final JScrollPane scrollPane;
     final LineNumberGutter gutter;
+    final UndoManager undoManager = new UndoManager();
     File file;
     boolean dirty;
 
@@ -33,6 +35,7 @@ public class EditorTab extends JPanel {
         scrollPane.setRowHeaderView(gutter);
         add(scrollPane, BorderLayout.CENTER);
 
+        textArea.getDocument().addUndoableEditListener(undoManager);
         textArea.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e)  { markDirty(); }
             public void removeUpdate(DocumentEvent e)  { markDirty(); }
@@ -58,6 +61,7 @@ public class EditorTab extends JPanel {
         try {
             textArea.setText(Files.readString(f.toPath()));
             textArea.setCaretPosition(0);
+            undoManager.discardAllEdits();
             file = f;
             dirty = false;
             onChange.run();
