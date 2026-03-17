@@ -13,6 +13,8 @@ public class TextEditor extends JFrame {
 
     private final JTextArea textArea;
     private final JLabel statusBar;
+    private final JScrollPane scrollPane;
+    private final LineNumberGutter lineNumberGutter;
     private File currentFile = null;
     private boolean dirty = false;
 
@@ -46,7 +48,10 @@ public class TextEditor extends JFrame {
 
         textArea.setComponentPopupMenu(buildContextMenu());
 
-        add(new JScrollPane(textArea), BorderLayout.CENTER);
+        lineNumberGutter = new LineNumberGutter(textArea);
+        scrollPane = new JScrollPane(textArea);
+        scrollPane.setRowHeaderView(lineNumberGutter);
+        add(scrollPane, BorderLayout.CENTER);
         add(statusBar, BorderLayout.SOUTH);
         setJMenuBar(buildMenuBar());
 
@@ -94,6 +99,14 @@ public class TextEditor extends JFrame {
     private JMenu viewMenu() {
         JMenu menu = new JMenu("View");
         menu.setMnemonic('V');
+
+        JCheckBoxMenuItem lineNumbers = new JCheckBoxMenuItem("Line Numbers", true);
+        lineNumbers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        lineNumbers.addActionListener(e -> {
+            scrollPane.setRowHeaderView(lineNumbers.isSelected() ? lineNumberGutter : null);
+            scrollPane.revalidate();
+        });
+        menu.add(lineNumbers);
 
         JCheckBoxMenuItem wrap = new JCheckBoxMenuItem("Line Wrap");
         wrap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
