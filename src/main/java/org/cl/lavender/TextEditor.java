@@ -8,6 +8,8 @@ import java.io.File;
 
 public class TextEditor extends JFrame {
 
+    private static final int CMD = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+
     private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
     private boolean lineNumbersVisible = true;
@@ -107,15 +109,15 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("File");
         menu.setMnemonic('F');
 
-        menu.add(item("New Tab",  KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK, e -> newTab()));
-        menu.add(item("Open…",    KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK, e -> openAction()));
+        menu.add(item("New Tab",  KeyEvent.VK_T, CMD, e -> newTab()));
+        menu.add(item("Open…",    KeyEvent.VK_O, CMD, e -> openAction()));
         menu.addSeparator();
-        menu.add(item("Save",     KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK, e -> saveAction()));
-        menu.add(item("Save As…", KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK, e -> saveAsAction()));
+        menu.add(item("Save",     KeyEvent.VK_S, CMD, e -> saveAction()));
+        menu.add(item("Save As…", KeyEvent.VK_S, CMD | InputEvent.SHIFT_DOWN_MASK, e -> saveAsAction()));
         menu.addSeparator();
-        menu.add(item("Close Tab",KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK, e -> closeTab(tabbedPane.getSelectedIndex())));
+        menu.add(item("Close Tab",KeyEvent.VK_W, CMD, e -> closeTab(tabbedPane.getSelectedIndex())));
         menu.addSeparator();
-        menu.add(item("Exit",     KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK, e -> exitAction()));
+        menu.add(item("Exit",     KeyEvent.VK_Q, CMD, e -> exitAction()));
         return menu;
     }
 
@@ -123,18 +125,18 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("Edit");
         menu.setMnemonic('E');
 
-        menu.add(item("Undo", KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK, e -> {
+        menu.add(item("Undo", KeyEvent.VK_Z, CMD, e -> {
             if (currentTab().undoManager.canUndo()) currentTab().undoManager.undo();
         }));
-        menu.add(item("Redo", KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK, e -> {
+        menu.add(item("Redo", KeyEvent.VK_Z, CMD | InputEvent.SHIFT_DOWN_MASK, e -> {
             if (currentTab().undoManager.canRedo()) currentTab().undoManager.redo();
         }));
         menu.addSeparator();
-        menu.add(item("Cut",        KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.cut()));
-        menu.add(item("Copy",       KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.copy()));
-        menu.add(item("Paste",      KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.paste()));
+        menu.add(item("Cut",        KeyEvent.VK_X, CMD, e -> currentTab().textArea.cut()));
+        menu.add(item("Copy",       KeyEvent.VK_C, CMD, e -> currentTab().textArea.copy()));
+        menu.add(item("Paste",      KeyEvent.VK_V, CMD, e -> currentTab().textArea.paste()));
         menu.addSeparator();
-        menu.add(item("Select All", KeyEvent.VK_A, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.selectAll()));
+        menu.add(item("Select All", KeyEvent.VK_A, CMD, e -> currentTab().textArea.selectAll()));
         return menu;
     }
 
@@ -143,7 +145,7 @@ public class TextEditor extends JFrame {
         menu.setMnemonic('V');
 
         JCheckBoxMenuItem lineNumbers = new JCheckBoxMenuItem("Line Numbers", true);
-        lineNumbers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        lineNumbers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, CMD | InputEvent.SHIFT_DOWN_MASK));
         lineNumbers.addActionListener(e -> {
             lineNumbersVisible = lineNumbers.isSelected();
             for (int i = 0; i < tabbedPane.getTabCount(); i++)
@@ -152,7 +154,7 @@ public class TextEditor extends JFrame {
         menu.add(lineNumbers);
 
         JCheckBoxMenuItem wrap = new JCheckBoxMenuItem("Line Wrap");
-        wrap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        wrap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, CMD | InputEvent.SHIFT_DOWN_MASK));
         wrap.addActionListener(e -> currentTab().textArea.setLineWrap(wrap.isSelected()));
         menu.add(wrap);
 
