@@ -22,6 +22,7 @@ public class TextEditor extends JFrame {
         setLocationRelativeTo(null);
 
         tabbedPane = new JTabbedPane();
+        tabbedPane.setFocusable(false);
         tabbedPane.addChangeListener(e -> onTabSwitch());
 
         statusBar = new JLabel(" Ln 1, Col 1");
@@ -99,6 +100,8 @@ public class TextEditor extends JFrame {
     private void onTabSwitch() {
         updateTitle();
         updateStatus();
+        EditorTab tab = currentTab();
+        if (tab != null) tab.textArea.requestFocusInWindow();
     }
 
     // ── Menu ─────────────────────────────────────────────────────────────────
