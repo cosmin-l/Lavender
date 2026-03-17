@@ -32,6 +32,7 @@ public class EditorTab extends JPanel {
 
         gutter = new LineNumberGutter(textArea);
         scrollPane = new JScrollPane(textArea);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setRowHeaderView(gutter);
         add(scrollPane, BorderLayout.CENTER);
 
