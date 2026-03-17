@@ -1,66 +1,99 @@
 package org.cl.lavender;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
-import java.nio.file.*;
+import java.io.File;
 
 public class TextEditor extends JFrame {
 
-    private final JTextArea textArea;
+    private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
-    private final JScrollPane scrollPane;
-    private final LineNumberGutter lineNumberGutter;
-    private File currentFile = null;
-    private boolean dirty = false;
+    private boolean lineNumbersVisible = true;
+    private int fontSize = 14;
 
     public TextEditor() {
-        super("Lavender - New File");
+        super("Lavender");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setSize(900, 650);
         setLocationRelativeTo(null);
 
-        // Text area
-        textArea = new JTextArea();
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        textArea.setTabSize(4);
-        textArea.setLineWrap(false);
-        textArea.setMargin(new Insets(4, 6, 4, 6));
+        tabbedPane = new JTabbedPane();
+        tabbedPane.addChangeListener(e -> onTabSwitch());
 
-        textArea.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e)  { markDirty(); updateStatus(); }
-            public void removeUpdate(DocumentEvent e)  { markDirty(); updateStatus(); }
-            public void changedUpdate(DocumentEvent e) { updateStatus(); }
-        });
-
-        textArea.addCaretListener(e -> updateStatus());
-
-        // Status bar
         statusBar = new JLabel(" Ln 1, Col 1");
         statusBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
                 BorderFactory.createEmptyBorder(2, 6, 2, 6)));
         statusBar.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 
-        textArea.setComponentPopupMenu(buildContextMenu());
-
-        lineNumberGutter = new LineNumberGutter(textArea);
-        scrollPane = new JScrollPane(textArea);
-        scrollPane.setRowHeaderView(lineNumberGutter);
-        add(scrollPane, BorderLayout.CENTER);
+        add(tabbedPane, BorderLayout.CENTER);
         add(statusBar, BorderLayout.SOUTH);
         setJMenuBar(buildMenuBar());
 
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) { exitAction(); }
         });
+
+        newTab();
     }
 
-    // ── Menu ────────────────────────────────────────────────────────────────
+    // ── Tab management ───────────────────────────────────────────────────────
+
+    private EditorTab newTab() {
+        EditorTab tab = new EditorTab(this::onTabChanged);
+        tab.setLineNumbersVisible(lineNumbersVisible);
+        tab.setEditorFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
+        tab.textArea.setComponentPopupMenu(buildContextMenu(tab));
+        tab.textArea.addCaretListener(e -> {
+            if (tab == currentTab()) updateStatus();
+        });
+
+        tabbedPane.addTab(tab.getTitle(), tab);
+        int index = tabbedPane.getTabCount() - 1;
+        tabbedPane.setTabComponentAt(index, new TabHeader(tab));
+        tabbedPane.setSelectedIndex(index);
+        tab.textArea.requestFocusInWindow();
+        return tab;
+    }
+
+    private void closeTab(int index) {
+        EditorTab tab = tabAt(index);
+        if (!tab.confirmDiscard(this)) return;
+        tabbedPane.removeTabAt(index);
+        if (tabbedPane.getTabCount() == 0) newTab();
+    }
+
+    private EditorTab currentTab() {
+        return (EditorTab) tabbedPane.getSelectedComponent();
+    }
+
+    private EditorTab tabAt(int index) {
+        return (EditorTab) tabbedPane.getComponentAt(index);
+    }
+
+    private void refreshTabHeader(EditorTab tab) {
+        int i = tabbedPane.indexOfComponent(tab);
+        if (i >= 0) ((TabHeader) tabbedPane.getTabComponentAt(i)).refresh();
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────────
+
+    private void onTabChanged() {
+        EditorTab tab = currentTab();
+        if (tab == null) return;
+        refreshTabHeader(tab);
+        updateTitle();
+        updateStatus();
+    }
+
+    private void onTabSwitch() {
+        updateTitle();
+        updateStatus();
+    }
+
+    // ── Menu ─────────────────────────────────────────────────────────────────
 
     private JMenuBar buildMenuBar() {
         JMenuBar bar = new JMenuBar();
@@ -74,11 +107,13 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("File");
         menu.setMnemonic('F');
 
-        menu.add(item("New",      KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK, e -> newAction()));
+        menu.add(item("New Tab",  KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK, e -> newTab()));
         menu.add(item("Open…",    KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK, e -> openAction()));
         menu.addSeparator();
         menu.add(item("Save",     KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK, e -> saveAction()));
         menu.add(item("Save As…", KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK, e -> saveAsAction()));
+        menu.addSeparator();
+        menu.add(item("Close Tab",KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK, e -> closeTab(tabbedPane.getSelectedIndex())));
         menu.addSeparator();
         menu.add(item("Exit",     KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK, e -> exitAction()));
         return menu;
@@ -88,11 +123,11 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("Edit");
         menu.setMnemonic('E');
 
-        menu.add(item("Cut",        KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK, e -> textArea.cut()));
-        menu.add(item("Copy",       KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, e -> textArea.copy()));
-        menu.add(item("Paste",      KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK, e -> textArea.paste()));
+        menu.add(item("Cut",        KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.cut()));
+        menu.add(item("Copy",       KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.copy()));
+        menu.add(item("Paste",      KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.paste()));
         menu.addSeparator();
-        menu.add(item("Select All", KeyEvent.VK_A, InputEvent.CTRL_DOWN_MASK, e -> textArea.selectAll()));
+        menu.add(item("Select All", KeyEvent.VK_A, InputEvent.CTRL_DOWN_MASK, e -> currentTab().textArea.selectAll()));
         return menu;
     }
 
@@ -103,21 +138,25 @@ public class TextEditor extends JFrame {
         JCheckBoxMenuItem lineNumbers = new JCheckBoxMenuItem("Line Numbers", true);
         lineNumbers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
         lineNumbers.addActionListener(e -> {
-            scrollPane.setRowHeaderView(lineNumbers.isSelected() ? lineNumberGutter : null);
-            scrollPane.revalidate();
+            lineNumbersVisible = lineNumbers.isSelected();
+            for (int i = 0; i < tabbedPane.getTabCount(); i++)
+                tabAt(i).setLineNumbersVisible(lineNumbersVisible);
         });
         menu.add(lineNumbers);
 
         JCheckBoxMenuItem wrap = new JCheckBoxMenuItem("Line Wrap");
         wrap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
-        wrap.addActionListener(e -> textArea.setLineWrap(wrap.isSelected()));
+        wrap.addActionListener(e -> currentTab().textArea.setLineWrap(wrap.isSelected()));
         menu.add(wrap);
 
         JMenu fontSizeMenu = new JMenu("Font Size");
         for (int size : new int[]{10, 12, 14, 16, 18, 20, 24}) {
             JMenuItem sizeItem = new JMenuItem(size + "pt");
-            sizeItem.addActionListener(e -> textArea.setFont(
-                    textArea.getFont().deriveFont((float) size)));
+            sizeItem.addActionListener(e -> {
+                fontSize = size;
+                for (int i = 0; i < tabbedPane.getTabCount(); i++)
+                    tabAt(i).setEditorFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
+            });
             fontSizeMenu.add(sizeItem);
         }
         menu.add(fontSizeMenu);
@@ -125,125 +164,106 @@ public class TextEditor extends JFrame {
         return menu;
     }
 
-    private JPopupMenu buildContextMenu() {
+    private JPopupMenu buildContextMenu(EditorTab tab) {
         JPopupMenu popup = new JPopupMenu();
-        popup.add(popupItem("Cut",        e -> textArea.cut()));
-        popup.add(popupItem("Copy",       e -> textArea.copy()));
-        popup.add(popupItem("Paste",      e -> textArea.paste()));
+        popup.add(popupItem("Cut",        e -> tab.textArea.cut()));
+        popup.add(popupItem("Copy",       e -> tab.textArea.copy()));
+        popup.add(popupItem("Paste",      e -> tab.textArea.paste()));
         popup.addSeparator();
-        popup.add(popupItem("Select All", e -> textArea.selectAll()));
+        popup.add(popupItem("Select All", e -> tab.textArea.selectAll()));
         popup.addSeparator();
-        popup.add(popupItem("Save",       e -> saveAction()));
+        popup.add(popupItem("Save",       e -> tab.save(this)));
         return popup;
     }
 
-    private static JMenuItem popupItem(String label, ActionListener al) {
-        JMenuItem item = new JMenuItem(label);
-        item.addActionListener(al);
-        return item;
-    }
-
     private static JMenuItem item(String label, int key, int mods, ActionListener al) {
-        JMenuItem item = new JMenuItem(label);
-        item.setAccelerator(KeyStroke.getKeyStroke(key, mods));
-        item.addActionListener(al);
-        return item;
+        JMenuItem it = new JMenuItem(label);
+        it.setAccelerator(KeyStroke.getKeyStroke(key, mods));
+        it.addActionListener(al);
+        return it;
     }
 
-    // ── Actions ─────────────────────────────────────────────────────────────
-
-    private void newAction() {
-        if (!confirmDiscard()) return;
-        textArea.setText("");
-        currentFile = null;
-        dirty = false;
-        updateTitle();
+    private static JMenuItem popupItem(String label, ActionListener al) {
+        JMenuItem it = new JMenuItem(label);
+        it.addActionListener(al);
+        return it;
     }
+
+    // ── Actions ──────────────────────────────────────────────────────────────
 
     private void openAction() {
-        if (!confirmDiscard()) return;
-        JFileChooser fc = chooser();
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter("Text files (*.txt, *.md, *.java)", "txt", "md", "java"));
+        fc.setAcceptAllFileFilterUsed(true);
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
         File f = fc.getSelectedFile();
-        try {
-            textArea.setText(Files.readString(f.toPath()));
-            textArea.setCaretPosition(0);
-            currentFile = f;
-            dirty = false;
-            updateTitle();
-        } catch (IOException ex) {
-            error("Could not open file:\n" + ex.getMessage());
+
+        // Reuse current tab if it's blank and untouched
+        EditorTab target = currentTab();
+        if (target.dirty || target.file != null || !target.textArea.getText().isEmpty()) {
+            target = newTab();
         }
+        target.load(this, f);
     }
 
-    private void saveAction() {
-        if (currentFile == null) { saveAsAction(); return; }
-        writeFile(currentFile);
-    }
-
-    private void saveAsAction() {
-        JFileChooser fc = chooser();
-        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        File f = fc.getSelectedFile();
-        if (!f.getName().contains(".")) f = new File(f.getPath() + ".txt");
-        writeFile(f);
-    }
+    private void saveAction()   { currentTab().save(this); }
+    private void saveAsAction() { currentTab().saveAs(this); }
 
     private void exitAction() {
-        if (!confirmDiscard()) return;
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            if (!tabAt(i).confirmDiscard(this)) return;
+        }
         dispose();
         System.exit(0);
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
-
-    private void writeFile(File f) {
-        try {
-            Files.writeString(f.toPath(), textArea.getText());
-            currentFile = f;
-            dirty = false;
-            updateTitle();
-        } catch (IOException ex) {
-            error("Could not save file:\n" + ex.getMessage());
-        }
-    }
-
-    private boolean confirmDiscard() {
-        if (!dirty) return true;
-        int choice = JOptionPane.showConfirmDialog(this,
-                "You have unsaved changes. Discard them?",
-                "Unsaved Changes",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        return choice == JOptionPane.YES_OPTION;
-    }
-
-    private void markDirty() {
-        if (!dirty) { dirty = true; updateTitle(); }
-    }
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private void updateTitle() {
-        String name = currentFile != null ? currentFile.getName() : "New File";
-        setTitle((dirty ? "* " : "") + name + " — Lavender");
+        EditorTab tab = currentTab();
+        if (tab == null) return;
+        setTitle(tab.getTitle() + " — Lavender");
     }
 
     private void updateStatus() {
+        EditorTab tab = currentTab();
+        if (tab == null) return;
         try {
-            int caret = textArea.getCaretPosition();
-            int line  = textArea.getLineOfOffset(caret);
-            int col   = caret - textArea.getLineStartOffset(line);
+            int caret = tab.textArea.getCaretPosition();
+            int line  = tab.textArea.getLineOfOffset(caret);
+            int col   = caret - tab.textArea.getLineStartOffset(line);
             statusBar.setText(String.format(" Ln %d, Col %d", line + 1, col + 1));
         } catch (Exception ignored) {}
     }
 
-    private void error(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
-    }
+    // ── Tab header with close button ─────────────────────────────────────────
 
-    private JFileChooser chooser() {
-        JFileChooser fc = new JFileChooser(currentFile != null ? currentFile.getParentFile() : null);
-        fc.setFileFilter(new FileNameExtensionFilter("Text files (*.txt, *.md, *.java)", "txt", "md", "java"));
-        fc.setAcceptAllFileFilterUsed(true);
-        return fc;
+    private class TabHeader extends JPanel {
+        private final EditorTab tab;
+        private final JLabel label;
+
+        TabHeader(EditorTab tab) {
+            super(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            setOpaque(false);
+            this.tab = tab;
+
+            label = new JLabel(tab.getTitle());
+            label.setFont(UIManager.getFont("TabbedPane.font"));
+
+            JButton close = new JButton("×");
+            close.setFont(close.getFont().deriveFont(11f));
+            close.setPreferredSize(new Dimension(18, 18));
+            close.setContentAreaFilled(false);
+            close.setBorderPainted(false);
+            close.setFocusable(false);
+            close.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            close.addActionListener(e -> closeTab(tabbedPane.indexOfComponent(tab)));
+
+            add(label);
+            add(close);
+            setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        }
+
+        void refresh() { label.setText(tab.getTitle()); }
     }
 }
