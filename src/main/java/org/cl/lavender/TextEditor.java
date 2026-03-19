@@ -146,6 +146,9 @@ public class TextEditor extends JFrame {
         menu.add(item("Paste",      KeyEvent.VK_V, CMD, e -> currentTab().textArea.paste()));
         menu.addSeparator();
         menu.add(item("Select All", KeyEvent.VK_A, CMD, e -> currentTab().textArea.selectAll()));
+        menu.addSeparator();
+        menu.add(item("Find…",          KeyEvent.VK_F, CMD, e -> currentTab().showFind()));
+        menu.add(item("Find & Replace…", KeyEvent.VK_H, CMD, e -> currentTab().showReplace()));
         return menu;
     }
 

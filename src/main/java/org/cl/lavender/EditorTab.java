@@ -14,6 +14,7 @@ public class EditorTab extends JPanel {
     final JTextArea textArea;
     final JScrollPane scrollPane;
     final LineNumberGutter gutter;
+    final FindBar findBar;
     final UndoManager undoManager = new UndoManager();
     File file;
     boolean dirty;
@@ -36,6 +37,9 @@ public class EditorTab extends JPanel {
         scrollPane.setRowHeaderView(gutter);
         add(scrollPane, BorderLayout.CENTER);
 
+        findBar = new FindBar(textArea);
+        add(findBar, BorderLayout.SOUTH);
+
         textArea.getDocument().addUndoableEditListener(undoManager);
         textArea.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e)  { markDirty(); }
@@ -48,6 +52,9 @@ public class EditorTab extends JPanel {
         String name = file != null ? file.getName() : "New File";
         return dirty ? "* " + name : name;
     }
+
+    void showFind()    { findBar.showBar(false); }
+    void showReplace() { findBar.showBar(true); }
 
     void setLineNumbersVisible(boolean visible) {
         scrollPane.setRowHeaderView(visible ? gutter : null);
