@@ -24,3 +24,69 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+// ── Fat JAR ──────────────────────────────────────────────────────────────────
+
+jar {
+    archiveBaseName = 'Lavender'
+    archiveClassifier = ''
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+// ── macOS DMG ────────────────────────────────────────────────────────────────
+
+def iconsetDir  = layout.buildDirectory.dir('Lavender.iconset').get().asFile
+def icnsFile    = layout.buildDirectory.file('lavender.icns').get().asFile
+def installerDir = layout.buildDirectory.dir('installer').get().asFile
+
+task createIconset(type: Copy) {
+    from('src/main/resources') {
+        include 'icon_16.png', 'icon_32.png', 'icon_64.png',
+                'icon_128.png', 'icon_256.png', 'icon_512.png'
+    }
+    into iconsetDir
+    rename { name ->
+        switch (name) {
+            case 'icon_16.png':  return 'icon_16x16.png'
+            case 'icon_32.png':  return 'icon_32x32.png'
+            case 'icon_64.png':  return 'icon_32x32@2x.png'
+            case 'icon_128.png': return 'icon_128x128.png'
+            case 'icon_256.png': return 'icon_128x128@2x.png'
+            case 'icon_512.png': return 'icon_256x256@2x.png'
+        }
+    }
+}
+
+task createIcns(type: Exec, dependsOn: createIconset) {
+    commandLine 'iconutil', '-c', 'icns', '-o', icnsFile.absolutePath, iconsetDir.absolutePath
+    outputs.file icnsFile
+}
+
+task dmg(type: Exec, dependsOn: [jar, createIcns]) {
+    group = 'distribution'
+    description = 'Packages the app into a macOS DMG installer using jpackage.'
+
+    def appVersion = version.replaceAll('-.*', '.0')  // "1.0-SNAPSHOT" → "1.0.0"
+
+    doFirst {
+        installerDir.mkdirs()
+        // Remove previous output so jpackage doesn't complain about existing file
+        installerDir.listFiles()?.findAll { it.name.endsWith('.dmg') }?.each { it.delete() }
+    }
+
+    commandLine "${System.getProperty('java.home')}/bin/jpackage",
+            '--type',        'dmg',
+            '--name',        'Lavender',
+            '--app-version', appVersion,
+            '--input',       jar.archiveFile.get().asFile.parent,
+            '--main-jar',    jar.archiveFile.get().asFile.name,
+            '--main-class',  application.mainClass.get(),
+            '--icon',        icnsFile.absolutePath,
+            '--dest',        installerDir.absolutePath
+}
