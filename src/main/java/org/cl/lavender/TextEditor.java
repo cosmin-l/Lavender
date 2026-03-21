@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class TextEditor extends JFrame {
 
@@ -24,6 +25,7 @@ public class TextEditor extends JFrame {
         setSize(900, 650);
         setLocationRelativeTo(null);
         setAppIcons();
+        registerMacAboutHandler();
 
         tabbedPane = new JTabbedPane();
         tabbedPane.setFocusable(false);
@@ -62,6 +64,32 @@ public class TextEditor extends JFrame {
             if (url != null) icons.add(new ImageIcon(url).getImage());
         }
         if (!icons.isEmpty()) setIconImages(icons);
+    }
+
+    private void registerMacAboutHandler() {
+        if (!System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")) return;
+        Desktop.getDesktop().setAboutHandler(e -> {
+            ImageIcon icon = null;
+            var url = getClass().getResource("/icon_128.png");
+            if (url != null) icon = new ImageIcon(url);
+
+            JLabel nameLabel = new JLabel("Lavender", SwingConstants.CENTER);
+            nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+
+            JLabel versionLabel = new JLabel("Version 1.0", SwingConstants.CENTER);
+            versionLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+
+            JPanel panel = new JPanel();
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            versionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panel.add(nameLabel);
+            panel.add(Box.createVerticalStrut(4));
+            panel.add(versionLabel);
+
+            JOptionPane.showMessageDialog(this, panel, "About Lavender",
+                    JOptionPane.PLAIN_MESSAGE, icon);
+        });
     }
 
     private EditorTab newTab() {
