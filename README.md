@@ -1,2 +1,3 @@
 Lavender - a multi platform text editor
-![alt text](http://url/to/img.png)
+
+![alt text](https://raw.githubusercontent.com/cosmin-l/Lavender/refs/heads/main/lavender.png)
