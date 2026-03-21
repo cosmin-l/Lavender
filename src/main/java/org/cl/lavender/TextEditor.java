@@ -30,6 +30,13 @@ public class TextEditor extends JFrame {
         tabbedPane = new JTabbedPane();
         tabbedPane.setFocusable(false);
         tabbedPane.addChangeListener(e -> onTabSwitch());
+        tabbedPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && tabbedPane.indexAtLocation(e.getX(), e.getY()) < 0)
+                    newTab();
+            }
+        });
 
         statusBar = new JLabel(" Ln 1, Col 1");
         statusBar.setBorder(BorderFactory.createCompoundBorder(
