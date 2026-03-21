@@ -205,8 +205,8 @@ public class FindBar extends JPanel {
         statusLabel.setText(String.format("%d of %d", currentIndex + 1, matches.size()));
 
         try {
-            Rectangle rect = textArea.modelToView2D(m[0]).getBounds();
-            textArea.scrollRectToVisible(rect);
+            var view = textArea.modelToView2D(m[0]);
+            if (view != null) textArea.scrollRectToVisible(view.getBounds());
         } catch (BadLocationException ignored) {}
     }
 
