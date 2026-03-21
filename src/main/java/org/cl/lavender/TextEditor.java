@@ -5,6 +5,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TextEditor extends JFrame {
 
@@ -20,6 +22,7 @@ public class TextEditor extends JFrame {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setSize(900, 650);
         setLocationRelativeTo(null);
+        setAppIcons();
 
         tabbedPane = new JTabbedPane();
         tabbedPane.setFocusable(false);
@@ -49,6 +52,16 @@ public class TextEditor extends JFrame {
     }
 
     // ── Tab management ───────────────────────────────────────────────────────
+
+    private void setAppIcons() {
+        int[] sizes = {16, 32, 64, 128, 256, 512};
+        List<Image> icons = new ArrayList<>();
+        for (int sz : sizes) {
+            var url = getClass().getResource("/icon_" + sz + ".png");
+            if (url != null) icons.add(new ImageIcon(url).getImage());
+        }
+        if (!icons.isEmpty()) setIconImages(icons);
+    }
 
     private EditorTab newTab() {
         EditorTab tab = new EditorTab(this::onTabChanged);
