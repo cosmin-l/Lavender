@@ -15,6 +15,7 @@ public class EditorTab extends JPanel {
     final JScrollPane scrollPane;
     final LineNumberGutter gutter;
     final FindBar findBar;
+    final Minimap minimap;
     final UndoManager undoManager = new UndoManager();
     File file;
     boolean dirty;
@@ -36,6 +37,9 @@ public class EditorTab extends JPanel {
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setRowHeaderView(gutter);
         add(scrollPane, BorderLayout.CENTER);
+
+        minimap = new Minimap(textArea, scrollPane);
+        add(minimap, BorderLayout.EAST);
 
         findBar = new FindBar(textArea);
         add(findBar, BorderLayout.SOUTH);
@@ -59,6 +63,11 @@ public class EditorTab extends JPanel {
     void setLineNumbersVisible(boolean visible) {
         scrollPane.setRowHeaderView(visible ? gutter : null);
         scrollPane.revalidate();
+    }
+
+    void setMinimapVisible(boolean visible) {
+        minimap.setVisible(visible);
+        revalidate();
     }
 
     void setEditorFont(Font font) {

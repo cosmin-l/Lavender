@@ -15,6 +15,7 @@ public class TextEditor extends JFrame {
     private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
     private boolean lineNumbersVisible = true;
+    private boolean minimapVisible     = true;
     private int fontSize = 14;
 
     public TextEditor() {
@@ -66,6 +67,7 @@ public class TextEditor extends JFrame {
     private EditorTab newTab() {
         EditorTab tab = new EditorTab(this::onTabChanged);
         tab.setLineNumbersVisible(lineNumbersVisible);
+        tab.setMinimapVisible(minimapVisible);
         tab.setEditorFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
         tab.textArea.setComponentPopupMenu(buildContextMenu(tab));
         tab.textArea.addCaretListener(e -> {
@@ -177,6 +179,15 @@ public class TextEditor extends JFrame {
                 tabAt(i).setLineNumbersVisible(lineNumbersVisible);
         });
         menu.add(lineNumbers);
+
+        JCheckBoxMenuItem minimap = new JCheckBoxMenuItem("Minimap", true);
+        minimap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, CMD | InputEvent.SHIFT_DOWN_MASK));
+        minimap.addActionListener(e -> {
+            minimapVisible = minimap.isSelected();
+            for (int i = 0; i < tabbedPane.getTabCount(); i++)
+                tabAt(i).setMinimapVisible(minimapVisible);
+        });
+        menu.add(minimap);
 
         JCheckBoxMenuItem wrap = new JCheckBoxMenuItem("Line Wrap");
         wrap.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, CMD | InputEvent.SHIFT_DOWN_MASK));
