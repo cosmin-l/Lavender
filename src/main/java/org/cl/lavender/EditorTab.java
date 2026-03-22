@@ -6,6 +6,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -50,6 +52,19 @@ public class EditorTab extends JPanel {
 
         findBar = new FindBar(textArea);
         add(findBar, BorderLayout.SOUTH);
+
+        textArea.addKeyListener(new KeyAdapter() {
+            @Override public void keyTyped(KeyEvent e) {
+                // keyTyped fires for printable chars, backspace, enter, tab — skip shortcuts
+                if (!e.isControlDown() && !e.isMetaDown() && e.getKeyChar() != KeyEvent.CHAR_UNDEFINED)
+                    SoundPlayer.playKeystroke();
+            }
+            @Override public void keyPressed(KeyEvent e) {
+                // Delete doesn't produce a keyTyped char on all platforms
+                if (e.getKeyCode() == KeyEvent.VK_DELETE)
+                    SoundPlayer.playKeystroke();
+            }
+        });
 
         textArea.getDocument().addUndoableEditListener(undoManager);
         textArea.getDocument().addDocumentListener(new DocumentListener() {

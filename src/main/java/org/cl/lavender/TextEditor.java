@@ -252,6 +252,11 @@ public class TextEditor extends JFrame {
         }
         menu.add(themeMenu);
 
+        menu.addSeparator();
+        JCheckBoxMenuItem sounds = new JCheckBoxMenuItem("Typewriter Sounds", SoundPlayer.isEnabled());
+        sounds.addActionListener(e -> SoundPlayer.setEnabled(sounds.isSelected()));
+        menu.add(sounds);
+
         return menu;
     }
 
