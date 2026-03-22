@@ -9,7 +9,7 @@ import java.util.prefs.Preferences;
 public class SoundPlayer {
 
     private static final int POOL_SIZE = 6;
-    private static final String[] SOUND_FILES = {"/sounds/key1.wav", "/sounds/key2.wav"};
+    private static final String SOUND_FILE = "/sounds/key1.wav";
     private static final Preferences PREFS = Preferences.userRoot().node("org/cl/lavender");
 
     private static volatile boolean enabled;
@@ -23,7 +23,7 @@ public class SoundPlayer {
         try {
             clips = new Clip[POOL_SIZE];
             for (int i = 0; i < POOL_SIZE; i++) {
-                String resource = SOUND_FILES[i % SOUND_FILES.length];
+                String resource = SOUND_FILE;
                 try (InputStream is  = SoundPlayer.class.getResourceAsStream(resource);
                      AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(is))) {
                     clips[i] = AudioSystem.getClip();
