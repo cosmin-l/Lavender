@@ -10,6 +10,7 @@ public class Main {
             System.setProperty("apple.awt.application.name", "Lavender");
         }
         System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua");
+        ThemeManager.set(ThemeManager.loadTheme());
         FlatDarkLaf.setup();
         SwingUtilities.invokeLater(() -> new TextEditor().setVisible(true));
     }

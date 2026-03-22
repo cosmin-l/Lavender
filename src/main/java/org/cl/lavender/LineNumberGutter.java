@@ -9,8 +9,6 @@ import java.awt.*;
 public class LineNumberGutter extends JComponent {
 
     private static final int PADDING = 10;
-    private static final Color BACKGROUND = new Color(43, 43, 43);
-    private static final Color FOREGROUND  = new Color(110, 110, 110);
 
     private final JTextArea textArea;
 
@@ -41,7 +39,7 @@ public class LineNumberGutter extends JComponent {
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(BACKGROUND);
+        g.setColor(ThemeManager.current().gutterBg());
         g.fillRect(0, 0, getWidth(), getHeight());
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -56,7 +54,7 @@ public class LineNumberGutter extends JComponent {
         int endLine   = Math.min(root.getElementCount() - 1, (clip.y + clip.height) / lineHeight);
 
         int gutterWidth = getWidth();
-        g2.setColor(FOREGROUND);
+        g2.setColor(ThemeManager.current().gutterFg());
 
         for (int i = startLine; i <= endLine; i++) {
             String label = String.valueOf(i + 1);

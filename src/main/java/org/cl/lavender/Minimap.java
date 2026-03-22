@@ -9,11 +9,7 @@ import java.awt.image.BufferedImage;
 
 public class Minimap extends JComponent {
 
-    private static final int   WIDTH       = 110;
-    private static final Color BACKGROUND  = new Color(43, 43, 43);
-    private static final Color TEXT_COLOR  = new Color(150, 150, 150);
-    private static final Color VIEWPORT_BG = new Color(255, 255, 255, 25);
-    private static final Color VIEWPORT_FG = new Color(200, 200, 200, 60);
+    private static final int WIDTH = 110;
 
     private final JTextArea   textArea;
     private final JScrollPane scrollPane;
@@ -61,7 +57,7 @@ public class Minimap extends JComponent {
         int w = getWidth(), h = getHeight();
         if (w <= 0 || h <= 0) return;
 
-        g.setColor(BACKGROUND);
+        g.setColor(ThemeManager.current().minimapBg());
         g.fillRect(0, 0, w, h);
 
         Element root  = textArea.getDocument().getDefaultRootElement();
@@ -80,9 +76,9 @@ public class Minimap extends JComponent {
             int vpY = (int) ((long) view.y * h / totalH);
             int vpH = Math.max(4, (int) ((long) view.height * h / totalH));
 
-            g.setColor(VIEWPORT_BG);
+            g.setColor(ThemeManager.current().minimapViewportBg());
             g.fillRect(0, vpY, w, vpH);
-            g.setColor(VIEWPORT_FG);
+            g.setColor(ThemeManager.current().minimapViewportFg());
             g.drawLine(0, vpY,       w, vpY);
             g.drawLine(0, vpY + vpH, w, vpY + vpH);
         }
@@ -95,7 +91,7 @@ public class Minimap extends JComponent {
         cacheLines = lines;
 
         Graphics2D g = cache.createGraphics();
-        g.setColor(BACKGROUND);
+        g.setColor(ThemeManager.current().minimapBg());
         g.fillRect(0, 0, w, h);
 
         Document doc = textArea.getDocument();
@@ -110,7 +106,7 @@ public class Minimap extends JComponent {
         float rowH = (float) h / lines;
         int   dotH = Math.max(1, (int) rowH);
 
-        g.setColor(TEXT_COLOR);
+        g.setColor(ThemeManager.current().minimapText());
         for (int i = 0; i < lines; i++) {
             Element el  = root.getElement(i);
             int     s   = el.getStartOffset();
@@ -137,6 +133,10 @@ public class Minimap extends JComponent {
         int       target = (int) ((long) mouseY * totalH / h) - view.height / 2;
         scrollPane.getVerticalScrollBar().setValue(Math.max(0, target));
     }
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+
+    public void themeChanged() { invalidateCache(); }
 
     // ── Visibility ────────────────────────────────────────────────────────────
 

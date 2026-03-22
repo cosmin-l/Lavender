@@ -39,9 +39,7 @@ public class TextEditor extends JFrame {
         });
 
         statusBar = new JLabel(" Ln 1, Col 1");
-        statusBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
-                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+        statusBar.setOpaque(true);
         statusBar.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 
         add(tabbedPane, BorderLayout.CENTER);
@@ -53,6 +51,7 @@ public class TextEditor extends JFrame {
         });
 
         newTab();
+        applyTheme(ThemeManager.current());
     }
 
     @Override
@@ -113,6 +112,7 @@ public class TextEditor extends JFrame {
         int index = tabbedPane.getTabCount() - 1;
         tabbedPane.setTabComponentAt(index, new TabHeader(tab));
         tabbedPane.setSelectedIndex(index);
+        tab.applyTheme();
         tab.textArea.requestFocusInWindow();
         return tab;
     }
@@ -241,6 +241,17 @@ public class TextEditor extends JFrame {
         }
         menu.add(fontSizeMenu);
 
+        ButtonGroup themeGroup = new ButtonGroup();
+        JMenu themeMenu = new JMenu("Theme");
+        for (Theme theme : ThemeManager.THEMES) {
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(theme.name(),
+                    theme == ThemeManager.current());
+            item.addActionListener(e -> applyTheme(theme));
+            themeGroup.add(item);
+            themeMenu.add(item);
+        }
+        menu.add(themeMenu);
+
         return menu;
     }
 
@@ -293,8 +304,41 @@ public class TextEditor extends JFrame {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             if (!tabAt(i).confirmDiscard(this)) return;
         }
+        ThemeManager.saveTheme();
         dispose();
         System.exit(0);
+    }
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+
+    private void applyTheme(Theme theme) {
+        ThemeManager.set(theme);
+
+        // Tab bar
+        UIManager.put("TabbedPane.background",        theme.gutterBg());
+        UIManager.put("TabbedPane.selectedBackground",theme.editorBg());
+        UIManager.put("TabbedPane.foreground",        theme.editorFg());
+        UIManager.put("TabbedPane.hoverBackground",   theme.editorBg());
+        tabbedPane.updateUI();
+        // updateUI's installColors() skips setBackground if already set — override explicitly
+        tabbedPane.setBackground(theme.gutterBg());
+        // FlatLaf only fills the union of tab rects; empty strip area falls through to the
+        // content pane — theme it so the full-width tab bar looks correct
+        getContentPane().setBackground(theme.gutterBg());
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            if (tabbedPane.getTabComponentAt(i) instanceof TabHeader th) th.refreshTheme();
+        }
+
+        // Status bar
+        statusBar.setBackground(theme.gutterBg());
+        statusBar.setForeground(theme.gutterFg());
+        statusBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, theme.findBorderColor()),
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+
+        // Editor tabs
+        for (int i = 0; i < tabbedPane.getTabCount(); i++)
+            tabAt(i).applyTheme();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -346,5 +390,9 @@ public class TextEditor extends JFrame {
         }
 
         void refresh() { label.setText(tab.getTitle()); }
+
+        void refreshTheme() {
+            label.setForeground(UIManager.getColor("TabbedPane.foreground"));
+        }
     }
 }

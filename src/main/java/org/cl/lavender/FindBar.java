@@ -14,19 +14,16 @@ import java.util.List;
 
 public class FindBar extends JPanel {
 
-    private static final Color MATCH_COLOR   = new Color(80, 70, 20);
-    private static final Color CURRENT_COLOR = new Color(200, 160, 0);
-
     private final JTextArea textArea;
     private final JTextField searchField  = new JTextField(20);
     private final JTextField replaceField = new JTextField(20);
     private final JLabel statusLabel      = new JLabel("  ");
     private final JPanel replaceRow;
 
-    private final Highlighter.HighlightPainter matchPainter   =
-            new DefaultHighlighter.DefaultHighlightPainter(MATCH_COLOR);
-    private final Highlighter.HighlightPainter currentPainter =
-            new DefaultHighlighter.DefaultHighlightPainter(CURRENT_COLOR);
+    private Highlighter.HighlightPainter matchPainter   =
+            new DefaultHighlighter.DefaultHighlightPainter(ThemeManager.current().findMatchColor());
+    private Highlighter.HighlightPainter currentPainter =
+            new DefaultHighlighter.DefaultHighlightPainter(ThemeManager.current().findCurrentColor());
 
     private final List<int[]> matches = new ArrayList<>();
     private int currentIndex = -1;
@@ -34,7 +31,7 @@ public class FindBar extends JPanel {
     public FindBar(JTextArea textArea) {
         this.textArea = textArea;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
+        setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ThemeManager.current().findBorderColor()));
 
         // ── Find row ─────────────────────────────────────────────────────────
         JPanel findRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 3));
@@ -127,6 +124,15 @@ public class FindBar extends JPanel {
     public void findNext() { if (isVisible()) moveToNext(); }
     public void findPrev() { if (isVisible()) moveToPrev(); }
 
+    public void applyTheme() {
+        Theme t = ThemeManager.current();
+        clearHighlights();
+        matchPainter   = new DefaultHighlighter.DefaultHighlightPainter(t.findMatchColor());
+        currentPainter = new DefaultHighlighter.DefaultHighlightPainter(t.findCurrentColor());
+        setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, t.findBorderColor()));
+        if (isVisible()) updateMatches();
+    }
+
     // ── Search ────────────────────────────────────────────────────────────────
 
     private void updateMatches() {
@@ -149,7 +155,7 @@ public class FindBar extends JPanel {
 
         if (matches.isEmpty()) {
             statusLabel.setText("No results");
-            searchField.setForeground(new Color(200, 80, 80));
+            searchField.setForeground(ThemeManager.current().findErrorColor());
             return;
         }
 

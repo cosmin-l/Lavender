@@ -74,6 +74,17 @@ public class EditorTab extends JPanel {
         textArea.setFont(font);
     }
 
+    void applyTheme() {
+        Theme t = ThemeManager.current();
+        textArea.setBackground(t.editorBg());
+        textArea.setForeground(t.editorFg());
+        textArea.setCaretColor(t.editorFg());
+        scrollPane.getViewport().setBackground(t.editorBg());
+        gutter.repaint();
+        minimap.themeChanged();
+        findBar.applyTheme();
+    }
+
     boolean load(Component parent, File f) {
         try {
             textArea.setText(Files.readString(f.toPath()));
