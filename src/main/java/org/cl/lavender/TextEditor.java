@@ -284,7 +284,6 @@ public class TextEditor extends JFrame {
 
     private void openAction() {
         JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(new FileNameExtensionFilter("Text files (*.txt, *.md, *.java)", "txt", "md", "java"));
         fc.setAcceptAllFileFilterUsed(true);
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
         File f = fc.getSelectedFile();

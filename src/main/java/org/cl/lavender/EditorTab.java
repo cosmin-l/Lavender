@@ -7,6 +7,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 public class EditorTab extends JPanel {
@@ -19,6 +23,9 @@ public class EditorTab extends JPanel {
     final UndoManager undoManager = new UndoManager();
     File file;
     boolean dirty;
+    boolean isBinary;
+
+    private static final int MAX_HEX_BYTES = 512 * 1024;
 
     private final Runnable onChange;
 
@@ -87,7 +94,16 @@ public class EditorTab extends JPanel {
 
     boolean load(Component parent, File f) {
         try {
-            textArea.setText(Files.readString(f.toPath()));
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String text = tryDecodeUtf8(bytes);
+            isBinary = (text == null);
+            if (isBinary) {
+                textArea.setText(formatHexDump(bytes));
+                textArea.setEditable(false);
+            } else {
+                textArea.setText(text);
+                textArea.setEditable(true);
+            }
             textArea.setCaretPosition(0);
             undoManager.discardAllEdits();
             file = f;
@@ -101,12 +117,59 @@ public class EditorTab extends JPanel {
         }
     }
 
+    /** Returns decoded UTF-8 text, or null if the file should be treated as binary. */
+    private static String tryDecodeUtf8(byte[] bytes) {
+        int checkLen = Math.min(bytes.length, 8192);
+        for (int i = 0; i < checkLen; i++) {
+            if (bytes[i] == 0) return null; // null byte → binary
+        }
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes)).toString();
+        } catch (CharacterCodingException e) {
+            return null;
+        }
+    }
+
+    private static String formatHexDump(byte[] bytes) {
+        int displayLen = Math.min(bytes.length, MAX_HEX_BYTES);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < displayLen; i += 16) {
+            int end    = Math.min(i + 16, displayLen);
+            int filled = end - i;
+            sb.append(String.format("%08X  ", i));
+            for (int j = i; j < end; j++) {
+                sb.append(String.format("%02X ", bytes[j] & 0xFF));
+                if (j - i == 7) sb.append(' ');
+            }
+            // Pad so the ASCII column always starts at the same position.
+            // A full 16-byte row occupies 8*3 + 1 + 8*3 = 49 hex chars.
+            int hexWritten = filled * 3 + (filled >= 8 ? 1 : 0);
+            sb.append(" ".repeat(49 - hexWritten));
+            sb.append(" |");
+            for (int j = i; j < end; j++) {
+                byte b = bytes[j];
+                sb.append(b >= 0x20 && b < 0x7F ? (char) b : '.');
+            }
+            sb.append("|\n");
+        }
+        if (bytes.length > MAX_HEX_BYTES) {
+            sb.append(String.format("%n[truncated — showing first %,d of %,d bytes]%n",
+                    MAX_HEX_BYTES, bytes.length));
+        }
+        return sb.toString();
+    }
+
     boolean save(Component parent) {
+        if (isBinary) return true;
         if (file == null) return saveAs(parent);
         return writeFile(parent, file);
     }
 
     boolean saveAs(Component parent) {
+        if (isBinary) return true;
         JFileChooser fc = chooser();
         if (fc.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) return false;
         File f = fc.getSelectedFile();
@@ -115,7 +178,7 @@ public class EditorTab extends JPanel {
     }
 
     boolean confirmDiscard(Component parent) {
-        if (!dirty) return true;
+        if (!dirty || isBinary) return true;
         return JOptionPane.showConfirmDialog(parent,
                 "\"" + getTitle() + "\" has unsaved changes. Discard?",
                 "Unsaved Changes",
