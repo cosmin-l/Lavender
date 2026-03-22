@@ -8,7 +8,9 @@ import java.util.prefs.Preferences;
 
 public class SoundPlayer {
 
-    private static final int POOL_SIZE = 6;
+    // Large pool so fast typing never needs to stop a still-playing clip.
+    // At ~1 s per sound, exhausting 20 clips requires >1200 WPM.
+    private static final int POOL_SIZE = 20;
     private static final String SOUND_FILE = "/sounds/key1.wav";
     private static final Preferences PREFS = Preferences.userRoot().node("org/cl/lavender");
 
@@ -21,14 +23,18 @@ public class SoundPlayer {
         enabled = PREFS.getBoolean("typewriterSounds", false);
         Clip[] clips = null;
         try {
+            // Load audio data once, then share the buffer across all clips.
+            AudioFormat format;
+            byte[] audioData;
+            try (InputStream is = SoundPlayer.class.getResourceAsStream(SOUND_FILE);
+                 AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(is))) {
+                format    = ais.getFormat();
+                audioData = ais.readAllBytes();
+            }
             clips = new Clip[POOL_SIZE];
             for (int i = 0; i < POOL_SIZE; i++) {
-                String resource = SOUND_FILE;
-                try (InputStream is  = SoundPlayer.class.getResourceAsStream(resource);
-                     AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(is))) {
-                    clips[i] = AudioSystem.getClip();
-                    clips[i].open(ais);
-                }
+                clips[i] = AudioSystem.getClip();
+                clips[i].open(format, audioData, 0, audioData.length);
             }
         } catch (Exception ignored) {
             // Audio unavailable — sounds silently disabled
