@@ -8,16 +8,18 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.prefs.Preferences;
 
 public class TextEditor extends JFrame {
 
-    private static final int CMD = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+    private static final int CMD   = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+    private static final Preferences PREFS = Preferences.userRoot().node("org/cl/lavender");
 
     private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
     private boolean lineNumbersVisible = true;
     private boolean minimapVisible     = true;
-    private int fontSize = 14;
+    private int fontSize = PREFS.getInt("fontSize", 14);
 
     public TextEditor() {
         super("Lavender");
@@ -229,14 +231,17 @@ public class TextEditor extends JFrame {
         wrap.addActionListener(e -> currentTab().textArea.setLineWrap(wrap.isSelected()));
         menu.add(wrap);
 
+        ButtonGroup fontSizeGroup = new ButtonGroup();
         JMenu fontSizeMenu = new JMenu("Font Size");
         for (int size : new int[]{10, 12, 14, 16, 18, 20, 24}) {
-            JMenuItem sizeItem = new JMenuItem(size + "pt");
+            JRadioButtonMenuItem sizeItem = new JRadioButtonMenuItem(size + "pt", size == fontSize);
             sizeItem.addActionListener(e -> {
                 fontSize = size;
+                PREFS.putInt("fontSize", fontSize);
                 for (int i = 0; i < tabbedPane.getTabCount(); i++)
                     tabAt(i).setEditorFont(new Font(Font.MONOSPACED, Font.PLAIN, fontSize));
             });
+            fontSizeGroup.add(sizeItem);
             fontSizeMenu.add(sizeItem);
         }
         menu.add(fontSizeMenu);
