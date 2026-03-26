@@ -17,6 +17,8 @@ public class TextEditor extends JFrame {
 
     private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
+    private final FileSidebar sidebar;
+    private boolean sidebarVisible;
     private boolean lineNumbersVisible = true;
     private boolean minimapVisible     = true;
     private int fontSize = PREFS.getInt("fontSize", 14);
@@ -44,6 +46,9 @@ public class TextEditor extends JFrame {
         statusBar.setOpaque(true);
         statusBar.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 
+        sidebar = new FileSidebar(this::openFileInEditor);
+        sidebarVisible = PREFS.getBoolean("sidebarVisible", false);
+        if (sidebarVisible) add(sidebar, BorderLayout.WEST);
         add(tabbedPane, BorderLayout.CENTER);
         add(statusBar, BorderLayout.SOUTH);
         setJMenuBar(buildMenuBar());
@@ -170,8 +175,9 @@ public class TextEditor extends JFrame {
         JMenu menu = new JMenu("File");
         menu.setMnemonic('F');
 
-        menu.add(item("New Tab",  KeyEvent.VK_T, CMD, e -> newTab()));
-        menu.add(item("Open…",    KeyEvent.VK_O, CMD, e -> openAction()));
+        menu.add(item("New Tab",      KeyEvent.VK_T, CMD, e -> newTab()));
+        menu.add(item("Open…",        KeyEvent.VK_O, CMD, e -> openAction()));
+        menu.add(item("Open Folder…", KeyEvent.VK_O, CMD | InputEvent.SHIFT_DOWN_MASK, e -> openFolderAction()));
         menu.addSeparator();
         menu.add(item("Save",     KeyEvent.VK_S, CMD, e -> saveAction()));
         menu.add(item("Save As…", KeyEvent.VK_S, CMD | InputEvent.SHIFT_DOWN_MASK, e -> saveAsAction()));
@@ -207,6 +213,12 @@ public class TextEditor extends JFrame {
     private JMenu viewMenu() {
         JMenu menu = new JMenu("View");
         menu.setMnemonic('V');
+
+        JCheckBoxMenuItem sidebarToggle = new JCheckBoxMenuItem("Sidebar", sidebarVisible);
+        sidebarToggle.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B, CMD));
+        sidebarToggle.addActionListener(e -> setSidebarVisible(sidebarToggle.isSelected()));
+        menu.add(sidebarToggle);
+        menu.addSeparator();
 
         JCheckBoxMenuItem lineNumbers = new JCheckBoxMenuItem("Line Numbers", true);
         lineNumbers.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, CMD | InputEvent.SHIFT_DOWN_MASK));
@@ -348,6 +360,41 @@ public class TextEditor extends JFrame {
         // Editor tabs
         for (int i = 0; i < tabbedPane.getTabCount(); i++)
             tabAt(i).applyTheme();
+
+        // Sidebar
+        sidebar.applyTheme(theme);
+    }
+
+    private void openFolderAction() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fc.setAcceptAllFileFilterUsed(false);
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        sidebar.setFolder(fc.getSelectedFile());
+        if (!sidebarVisible) setSidebarVisible(true);
+    }
+
+    private void openFileInEditor(File file) {
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            if (file.equals(tabAt(i).file)) { tabbedPane.setSelectedIndex(i); return; }
+        }
+        EditorTab target = currentTab();
+        if (target.dirty || target.file != null || !target.textArea.getText().isEmpty()) {
+            target = newTab();
+        }
+        target.load(this, file);
+    }
+
+    private void setSidebarVisible(boolean visible) {
+        sidebarVisible = visible;
+        PREFS.putBoolean("sidebarVisible", visible);
+        if (visible) {
+            add(sidebar, BorderLayout.WEST);
+        } else {
+            remove(sidebar);
+        }
+        revalidate();
+        repaint();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
