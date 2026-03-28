@@ -18,6 +18,7 @@ public class TextEditor extends JFrame {
     private final JTabbedPane tabbedPane;
     private final JLabel statusBar;
     private final FileSidebar sidebar;
+    private final JSplitPane splitPane;
     private boolean sidebarVisible;
     private boolean lineNumbersVisible = true;
     private boolean minimapVisible     = true;
@@ -48,8 +49,16 @@ public class TextEditor extends JFrame {
 
         sidebar = new FileSidebar(this::openFileInEditor);
         sidebarVisible = PREFS.getBoolean("sidebarVisible", false);
-        if (sidebarVisible) add(sidebar, BorderLayout.WEST);
-        add(tabbedPane, BorderLayout.CENTER);
+        sidebar.setMinimumSize(new Dimension(0, 0));
+        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebar, tabbedPane);
+        splitPane.setBorder(null);
+        splitPane.setDividerSize(5);
+        splitPane.setContinuousLayout(true);
+        splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+            int loc = (int) e.getNewValue();
+            if (sidebarVisible && loc > 0) PREFS.putInt("sidebarWidth", loc);
+        });
+        add(splitPane, BorderLayout.CENTER);
         add(statusBar, BorderLayout.SOUTH);
         setJMenuBar(buildMenuBar());
 
@@ -64,7 +73,11 @@ public class TextEditor extends JFrame {
     @Override
     public void setVisible(boolean visible) {
         super.setVisible(visible);
-        if (visible) SwingUtilities.invokeLater(() -> currentTab().textArea.requestFocusInWindow());
+        if (visible) SwingUtilities.invokeLater(() -> {
+            int w = sidebarVisible ? PREFS.getInt("sidebarWidth", FileSidebar.PREFERRED_WIDTH) : 0;
+            splitPane.setDividerLocation(w);
+            currentTab().textArea.requestFocusInWindow();
+        });
     }
 
     // ── Tab management ───────────────────────────────────────────────────────
@@ -363,6 +376,7 @@ public class TextEditor extends JFrame {
 
         // Sidebar
         sidebar.applyTheme(theme);
+        splitPane.setBackground(theme.findBorderColor());
     }
 
     private void openFolderAction() {
@@ -389,12 +403,13 @@ public class TextEditor extends JFrame {
         sidebarVisible = visible;
         PREFS.putBoolean("sidebarVisible", visible);
         if (visible) {
-            add(sidebar, BorderLayout.WEST);
+            int w = PREFS.getInt("sidebarWidth", FileSidebar.PREFERRED_WIDTH);
+            splitPane.setDividerLocation(w);
         } else {
-            remove(sidebar);
+            int loc = splitPane.getDividerLocation();
+            if (loc > 0) PREFS.putInt("sidebarWidth", loc);
+            splitPane.setDividerLocation(0);
         }
-        revalidate();
-        repaint();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

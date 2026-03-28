@@ -114,7 +114,6 @@ public class FileSidebar extends JPanel {
         scrollPane.setBackground(bg);
         scrollPane.getViewport().setBackground(bg);
 
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, theme.findBorderColor()));
         repaint();
     }
 
