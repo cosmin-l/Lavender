@@ -17,7 +17,7 @@ public class ThemeManager {
             new Color(60, 60, 60),    new Color(200, 80, 80)),
 
         new Theme("Dracula",
-            new Color(40, 42, 54),    new Color(248, 248, 242),
+            new Color(40, 42, 54),    new Color(169, 177, 214),
             new Color(33, 34, 44),    new Color(98, 114, 164),
             new Color(33, 34, 44),    new Color(98, 114, 164),
             new Color(255, 255, 255, 20), new Color(189, 147, 249, 60),
@@ -25,7 +25,7 @@ public class ThemeManager {
             new Color(68, 71, 90),    new Color(255, 85, 85)),
 
         new Theme("Monokai",
-            new Color(39, 40, 34),    new Color(248, 248, 242),
+            new Color(39, 40, 34),    new Color(190, 186, 158),
             new Color(44, 45, 38),    new Color(117, 113, 94),
             new Color(39, 40, 34),    new Color(117, 113, 94),
             new Color(255, 255, 255, 20), new Color(230, 219, 116, 60),
