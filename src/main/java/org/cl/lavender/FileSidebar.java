@@ -92,6 +92,8 @@ public class FileSidebar extends JPanel {
 
     // ── Public API ──────────────────────────────────────────────────────────
 
+    public File getFolder() { return rootFolder; }
+
     public void setFolder(File folder) {
         rootFolder = folder;
         folderLabel.setText(folder.getName());

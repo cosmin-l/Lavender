@@ -66,7 +66,7 @@ public class TextEditor extends JFrame {
             public void windowClosing(WindowEvent e) { exitAction(); }
         });
 
-        newTab();
+        restoreSession();
         applyTheme(ThemeManager.current());
     }
 
@@ -338,9 +338,63 @@ public class TextEditor extends JFrame {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             if (!tabAt(i).confirmDiscard(this)) return;
         }
+        saveSession();
         ThemeManager.saveTheme();
         dispose();
         System.exit(0);
+    }
+
+    private void saveSession() {
+        int count = 0;
+        int selectedIndex = tabbedPane.getSelectedIndex();
+        String selectedPath = null;
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            EditorTab tab = tabAt(i);
+            if (tab.file != null) {
+                PREFS.put("sessionFile." + count, tab.file.getAbsolutePath());
+                if (i == selectedIndex) selectedPath = tab.file.getAbsolutePath();
+                count++;
+            }
+        }
+        int oldCount = PREFS.getInt("sessionFileCount", 0);
+        for (int i = count; i < oldCount; i++) PREFS.remove("sessionFile." + i);
+        PREFS.putInt("sessionFileCount", count);
+        if (selectedPath != null) PREFS.put("sessionSelectedFile", selectedPath);
+        else PREFS.remove("sessionSelectedFile");
+
+        File folder = sidebar.getFolder();
+        if (folder != null) PREFS.put("sidebarFolder", folder.getAbsolutePath());
+        else PREFS.remove("sidebarFolder");
+    }
+
+    private void restoreSession() {
+        String folderPath = PREFS.get("sidebarFolder", null);
+        if (folderPath != null) {
+            File folder = new File(folderPath);
+            if (folder.exists() && folder.isDirectory()) sidebar.setFolder(folder);
+        }
+
+        int count = PREFS.getInt("sessionFileCount", 0);
+        String selectedPath = PREFS.get("sessionSelectedFile", null);
+        for (int i = 0; i < count; i++) {
+            String path = PREFS.get("sessionFile." + i, null);
+            if (path == null) continue;
+            File f = new File(path);
+            if (!f.exists() || !f.isFile()) continue;
+            newTab().load(this, f);
+        }
+
+        if (selectedPath != null) {
+            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                EditorTab tab = tabAt(i);
+                if (tab.file != null && selectedPath.equals(tab.file.getAbsolutePath())) {
+                    tabbedPane.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+
+        if (tabbedPane.getTabCount() == 0) newTab();
     }
 
     // ── Theme ─────────────────────────────────────────────────────────────────
